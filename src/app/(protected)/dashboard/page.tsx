@@ -4,7 +4,10 @@ import { useUser } from "@clerk/nextjs";
 const Dashboard =  () => {
     const {user} = useUser();
   return (
-    <div>{user?.firstName}</div>
+    <div className="">
+      <div>{user?.firstName}</div>
+      <div>{user?.lastName}</div>
+    </div>
   )
 }
 
