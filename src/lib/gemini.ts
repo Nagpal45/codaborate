@@ -50,8 +50,9 @@ ${diff}
     return response.response.text();
 };
 
-export const summariseCode = async (doc: Document) => {
-    const code = doc.pageContent.slice(0, 10000);
+export const summariseCode = async (doc: Document) => {    
+    try{
+        const code = doc.pageContent.slice(0, 10000);
     const response = await model.generateContent([
         'You are an intelligent senior software engineer who specializes in onboarding junior software engineers onto projects.',
         `You are onboarding a junior software engineer and explaining to them the purpose of the ${doc.metadata.source} file.
@@ -63,6 +64,10 @@ Give a summary no more than 100 words of the code above.`
     ]);
 
     return response.response.text();
+    }catch(error){
+        console.error('Error summarising code:', error);
+        return '';
+    }
 };
 
 export async function generateEmbedding(summary: string) {
