@@ -7,15 +7,33 @@ import { Textarea } from "@/components/ui/textarea";
 import useproject from "@/hooks/useProject";
 import { Code } from "lucide-react";
 import { useState } from "react";
+import { askQuestion } from "./action";
+import { readStreamableValue } from "ai/rsc";
 
 const AskQuestionCard = () => {
     const {project} = useproject();
     const [question, setQuestion] = useState('');
     const [open, setOpen] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [filesReferences, setFilesReferences] = useState<{fileName:string; sourceCode:string; summary:string}[]>([]);
+    const [answer, setAnswer] = useState('');
 
     const onSubmit = async(e: React.FormEvent) => {
         e.preventDefault();
+        if(!project?.id) return;
+        setLoading(true);
         setOpen(true);
+
+        const {output, filesReferences} = await askQuestion(question, project.id);
+        setFilesReferences(filesReferences);
+
+        for await (const delta of readStreamableValue(output)) {
+            if(delta){
+                setAnswer(ans => ans + delta);
+            }
+        }
+
+        setLoading(false);
     }
 
     return (
@@ -27,7 +45,11 @@ const AskQuestionCard = () => {
                     <Code width={40} height={40} />
                 </DialogTitle>
             </DialogHeader>
-
+            {answer}
+            <h1>File references</h1>
+            {filesReferences.map((file, i) => {
+                return <span key={i}>{file.fileName}</span>
+            })}
             </DialogContent>
         </Dialog>
         <Card className="relative col-span-3">
