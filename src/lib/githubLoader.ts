@@ -1,75 +1,123 @@
-import {GithubRepoLoader} from '@langchain/community/document_loaders/web/github';
-import { Document } from '@langchain/core/documents';
+import { GithubRepoLoader } from '@langchain/community/document_loaders/web/github';
 import { generateEmbedding, summariseCode } from './gemini';
 import { db } from '@/server/db';
 
-export const loadGithubRepo = async (githubUrl: string, githubToken?: string) => {
-    const branches = ['main', 'master'];
-    let docs = null;
+class RateLimitQueue {
+  private queue: (() => Promise<void>)[] = [];
+  private isProcessing = false;
+  private readonly RATE_LIMIT_DELAY = 4000;
 
-    for (const branch of branches) {
+  enqueue(operation: () => Promise<void>) {
+    return new Promise<void>((resolve, reject) => {
+      this.queue.push(async () => {
         try {
-            const loader = new GithubRepoLoader(githubUrl, {
-                accessToken: githubToken || '',
-                branch,
-                ignoreFiles: ['package-lock.json', 'yarn.lock', 'pnpm-lock.yaml', 'bun.lockb'],
-                recursive: true,
-                unknown: 'warn',
-                maxConcurrency: 5,
-            });
-
-            docs = await loader.load();
-            if (docs) break; 
+          await operation();
+          resolve();
         } catch (error) {
-            console.log(error);
-            console.warn(`Failed to load ${branch} branch:`);
+          reject(error);
         }
+      });
+
+      if (!this.isProcessing) {
+        this.processQueue();
+      }
+    });
+  }
+
+  private async processQueue() {
+    if (this.queue.length === 0) {
+      this.isProcessing = false;
+      return;
     }
 
-    if (!docs) {
-        throw new Error('Failed to load repository from main or master branch.');
+    this.isProcessing = true;
+    const operation = this.queue.shift();
+
+    if (operation) {
+      try {
+        await operation();
+      } catch (error) {
+        console.error('Error in queue processing:', error);
+      }
+
+      // Wait before processing next operation
+      await new Promise(resolve => setTimeout(resolve, this.RATE_LIMIT_DELAY));
+      this.processQueue();
     }
+  }
+}
 
-    return docs;
-};
+export const loadGithubRepo = async (githubUrl: string, githubToken?: string) => {
+  const branches = ['main', 'master'];
+  let docs = null;
 
+  for (const branch of branches) {
+    try {
+      const loader = new GithubRepoLoader(githubUrl, {
+        accessToken: githubToken || '',
+        branch,
+        ignoreFiles: ['package-lock.json', 'yarn.lock', 'pnpm-lock.yaml', 'bun.lockb'],
+        recursive: true,
+        unknown: 'warn',
+        maxConcurrency: 5,
+      });
 
-const generateEmbeddings = async (docs: Document[]) => {
-    return await Promise.all(docs.map(async doc => {
-        const summary = await summariseCode(doc)
-        const embedding = await generateEmbedding(summary);
-        return {
-            summary, embedding,
-            sourceCode: JSON.parse(JSON.stringify(doc.pageContent)),
-            fileName: doc.metadata.source,
-        }
-    }))
+      docs = await loader.load();
+      if (docs) break; 
+    } catch (error) {
+      console.log(error);
+      console.warn(`Failed to load ${branch} branch:`);
+    }
+  }
+
+  if (!docs) {
+    throw new Error('Failed to load repository from main or master branch.');
+  }
+
+  return docs;
 };
 
 export const indexGithubRepo = async (projectId: string, githubUrl: string, githubToken?: string) => {
+    // Load repository documents
     const docs = await loadGithubRepo(githubUrl, githubToken);
-
-    const allEmbeddings = await generateEmbeddings(docs);
-
-    await Promise.allSettled(allEmbeddings.map(async (embedding, index) => {
-        if(!embedding) return;
-
-        const sourceCodeEmbedding = await db.sourceCodeEmbedding.create({
+  
+    // Create rate limit queue
+    const rateLimitQueue = new RateLimitQueue();
+  
+    // Process each document through the queue
+    const processingPromises = docs.map(async (doc) => {
+      return rateLimitQueue.enqueue(async () => {
+        try {
+          // Generate summary
+          const summary = await summariseCode(doc);
+  
+          // Generate embedding
+          const embedding = await generateEmbedding(summary);
+  
+          // Create database entry for source code embedding
+          const sourceCodeEmbedding = await db.sourceCodeEmbedding.create({
             data: {
-                summary: embedding.summary,
-                sourceCode: embedding.sourceCode,
-                fileName: embedding.fileName,
-                projectId,
+              summary: summary,
+              sourceCode: JSON.parse(JSON.stringify(doc.pageContent)),
+              fileName: doc.metadata.source,
+              projectId,
             }
-        })
-
-        
-
-        await db.$executeRaw`
-        UPDATE "SourceCodeEmbedding"
-        SET "summaryEmbedding" = ${embedding.embedding}::vector
-        WHERE "id" = ${sourceCodeEmbedding.id}
-        `;
-    }));
-    return allEmbeddings;
-};
+          });
+  
+          // Update embedding vector
+          await db.$executeRaw`
+          UPDATE "SourceCodeEmbedding"
+          SET "summaryEmbedding" = ${embedding}::vector
+          WHERE "id" = ${sourceCodeEmbedding.id}
+          `;
+  
+          console.log(`Processed: ${doc.metadata.source}`);
+        } catch (error) {
+          console.error(`Error processing document ${doc.metadata.source}:`, error);
+        }
+      });
+    });
+  
+    // Wait for all documents to be processed
+    await Promise.all(processingPromises);
+  };
