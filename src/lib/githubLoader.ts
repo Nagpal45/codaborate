@@ -78,23 +78,17 @@ export const loadGithubRepo = async (githubUrl: string, githubToken?: string) =>
 };
 
 export const indexGithubRepo = async (projectId: string, githubUrl: string, githubToken?: string) => {
-    // Load repository documents
     const docs = await loadGithubRepo(githubUrl, githubToken);
   
-    // Create rate limit queue
     const rateLimitQueue = new RateLimitQueue();
   
-    // Process each document through the queue
     const processingPromises = docs.map(async (doc) => {
       return rateLimitQueue.enqueue(async () => {
         try {
-          // Generate summary
           const summary = await summariseCode(doc);
   
-          // Generate embedding
           const embedding = await generateEmbedding(summary);
   
-          // Create database entry for source code embedding
           const sourceCodeEmbedding = await db.sourceCodeEmbedding.create({
             data: {
               summary: summary,
@@ -104,20 +98,18 @@ export const indexGithubRepo = async (projectId: string, githubUrl: string, gith
             }
           });
   
-          // Update embedding vector
           await db.$executeRaw`
           UPDATE "SourceCodeEmbedding"
           SET "summaryEmbedding" = ${embedding}::vector
           WHERE "id" = ${sourceCodeEmbedding.id}
           `;
   
-          console.log(`Processed: ${doc.metadata.source}`);
+          // console.log(`Processed: ${doc.metadata.source}`);
         } catch (error) {
           console.error(`Error processing document ${doc.metadata.source}:`, error);
         }
       });
     });
   
-    // Wait for all documents to be processed
     await Promise.all(processingPromises);
   };
