@@ -82,3 +82,7 @@
     @apply bg-background text-foreground;
   }
 }
+
+.code-highlight{
+  color: white;
+}
