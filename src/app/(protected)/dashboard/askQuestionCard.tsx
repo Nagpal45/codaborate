@@ -10,6 +10,7 @@ import { useState } from "react";
 import { askQuestion } from "./action";
 import { readStreamableValue } from "ai/rsc";
 import MDEditor from '@uiw/react-md-editor';
+import CodeReferences from "./codeReferences";
 
 const AskQuestionCard = () => {
     const {project} = useproject();
@@ -42,19 +43,21 @@ const AskQuestionCard = () => {
     return (
         <>
         <Dialog open={open} onOpenChange={setOpen}>
-            <DialogContent className="sm:max-w-[80vw]">
+            <DialogContent className="sm:max-w-[80vw] max-h-[90vh] overflow-y-scroll">
             <DialogHeader>
                 <DialogTitle>
                     <Code width={40} height={40} />
                 </DialogTitle>
             </DialogHeader>
-            <MDEditor.Markdown source={answer} className="max-w-[70vw] h-full max-h-[40vh] overflow-y-scroll" style={{
+            <MDEditor.Markdown source={answer} className="max-w-[70vw] h-full  overflow-y-scroll" style={{
                 background: 'white',
                 color: 'black',
                 //hide scrollbar
                 scrollbarWidth: 'none',
                 msOverflowStyle: 'none',
             }} />
+            <div className="h-4"></div>
+            <CodeReferences fileReferences={filesReferences} />
             <Button type = "button" onClick={() => setOpen(false)}>
                 Close
             </Button>
