@@ -13,6 +13,7 @@ import MDEditor from '@uiw/react-md-editor';
 import CodeReferences from "./codeReferences";
 import { api } from "@/trpc/react";
 import { toast } from "sonner";
+import useRefetch from "@/hooks/useRefetch";
 
 const AskQuestionCard = () => {
     const {project} = useproject();
@@ -43,6 +44,8 @@ const AskQuestionCard = () => {
         setLoading(false);
     }
 
+    const refetch = useRefetch()
+
     return (
         <>
         <Dialog open={open} onOpenChange={setOpen}>
@@ -54,6 +57,7 @@ const AskQuestionCard = () => {
                 <Button disabled={saveAnswer.isPending}  variant="outline" onClick={() => {saveAnswer.mutate({projectId: project!.id, question, answer, filesReferences},{
                     onSuccess: () => {
                         toast.success('Answer saved!');
+                        refetch();
                     },
                     onError: (err) => {
                         toast.error('Failed to save answer');

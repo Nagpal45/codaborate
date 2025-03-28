@@ -68,7 +68,7 @@ export const projectRouter = createTRPCRouter({
       },
     });
   }),
-  getQuestions: protectedProcedure.input(z.object({projectId: z.string()})).mutation(async ({input, ctx}) => {
+  getQuestions: protectedProcedure.input(z.object({projectId: z.string()})).query(async ({input, ctx}) => {
     return await ctx.db.question.findMany({
       where: {
         projectId: input.projectId,
