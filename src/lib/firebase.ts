@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { getStorage } from "firebase/storage";
+import { getDownloadURL, getStorage, ref, uploadBytesResumable } from "firebase/storage";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -12,3 +12,35 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 export const storage = getStorage(app);
+
+export async function uploadFile(file: File, setProgress?: (progress: number) => void) {
+    return new Promise((resolve, reject) => {
+        try{
+            const storageRef = ref(storage, file.name);
+            const uploadTask = uploadBytesResumable(storageRef, file);
+
+            uploadTask.on('state_changed', (snapshot) => {
+               const progress = Math.round(snapshot.bytesTransferred / snapshot.totalBytes) * 100 
+               if(setProgress) setProgress(progress)
+                switch(snapshot.state){
+                    case 'paused':
+                        console.log('upload is paused');
+                        break;
+                    case 'running':
+                        console.log('upload is running');
+                        break;
+                }
+            }, error => {
+                reject(error)
+            }, () => {
+                getDownloadURL(uploadTask.snapshot.ref).then(downloadUrl => {
+                    resolve(downloadUrl)
+                })
+            })
+                
+        }catch(e){
+            console.error(e)
+            reject(e)
+        }
+    })
+}
