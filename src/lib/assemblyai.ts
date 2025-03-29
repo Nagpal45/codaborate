@@ -28,7 +28,5 @@ export const processMeeting = async (meetingAudioURL: string) => {
         throw new Error('No transcript text found');
     }
 
-    return {
-        transcript, summaries,
-    }
+    return summaries;
 }
