@@ -1,3 +1,5 @@
+import { IssuesList } from "../issuesList";
+
 type Props = {
     params: Promise<{ meetingId: string }>;
 };
@@ -5,7 +7,7 @@ type Props = {
 const MeetingDetailsPage = async ({params}: Props) => {
     const {meetingId} = await params;
     return (
-        <div className="">{meetingId}</div>
+        <IssuesList meetingId={meetingId}/>
     );
 };
 
