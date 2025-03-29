@@ -16,7 +16,7 @@ export const storage = getStorage(app);
 export async function uploadFile(file: File, setProgress?: (progress: number) => void) {
     return new Promise((resolve, reject) => {
         try{
-            const storageRef = ref(storage, file.name);
+            const storageRef = ref(storage, `meetings/${file?.name}`);
             const uploadTask = uploadBytesResumable(storageRef, file);
 
             uploadTask.on('state_changed', (snapshot) => {
