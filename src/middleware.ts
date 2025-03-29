@@ -1,10 +1,15 @@
 import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server'
+import { NextResponse } from 'next/server'
 
 const isPublicRoute = createRouteMatcher(['/signIn(.*)','/signUp(.*)'])
+const isHomeRoute = createRouteMatcher(['/'])
 
 export default clerkMiddleware(async (auth, req) => {
   if (!isPublicRoute(req)) {
     await auth.protect()
+  }
+  if (isHomeRoute(req)) {
+    return NextResponse.redirect(new URL('/dashboard', req.url))
   }
 })
 
