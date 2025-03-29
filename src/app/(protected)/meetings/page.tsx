@@ -7,6 +7,9 @@ import MeetingCard from "../dashboard/meetingCard";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Trash } from "lucide-react";
+import { toast } from "sonner";
+import useRefetch from "@/hooks/useRefetch";
 
 const Meetings = () => {
   const { projectId } = useproject();
@@ -16,6 +19,8 @@ const Meetings = () => {
       refetchInterval: 4000,
     },
   );
+  const deleteMeeting = api.project.deleteMeeting.useMutation();
+  const refetch = useRefetch();
 
   return (
     <>
@@ -58,6 +63,14 @@ const Meetings = () => {
                         View Meeting
                     </Button>
                   </Link>
+                  <Button variant="destructive" onClick={() => deleteMeeting.mutate({ meetingId: meeting.id },{
+                    onSuccess:() => {
+                      toast.success("Meeting deleted successfully!");
+                      refetch();
+                    }
+                  })}disabled={deleteMeeting.isPending}>
+                    <Trash className="h-4 w-4" />
+                  </Button>
             </div>
           </li>
         ))}

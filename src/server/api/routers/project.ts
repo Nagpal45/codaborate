@@ -93,7 +93,15 @@ export const projectRouter = createTRPCRouter({
         },
       });
     }),
-    uploadMeeting: protectedProcedure.input(z.object({projectId: z.string(), meetingAudioURL : z.string(), name: z.string()})).mutation(async ({input, ctx}) => {
+  uploadMeeting: protectedProcedure
+    .input(
+      z.object({
+        projectId: z.string(),
+        meetingAudioURL: z.string(),
+        name: z.string(),
+      }),
+    )
+    .mutation(async ({ input, ctx }) => {
       const meeting = await ctx.db.meeting.create({
         data: {
           projectId: input.projectId,
@@ -101,21 +109,32 @@ export const projectRouter = createTRPCRouter({
           name: input.name,
           status: "PROCESSING",
         },
-      })
+      });
       return meeting;
     }),
-  getMeetings: protectedProcedure.input(z.object({projectId: z.string()})).query(async ({input, ctx}) => {
-    return await ctx.db.meeting.findMany({
-      where: {
-        projectId: input.projectId,
-      },
-      orderBy: {
-        createdAt: "desc",
-      },
-      include: {
-        issues: true,
-      },
-    })
-  }
+  getMeetings: protectedProcedure
+    .input(z.object({ projectId: z.string() }))
+    .query(async ({ input, ctx }) => {
+      return await ctx.db.meeting.findMany({
+        where: {
+          projectId: input.projectId,
+        },
+        orderBy: {
+          createdAt: "desc",
+        },
+        include: {
+          issues: true,
+        },
+      });
+    }),
+    deleteMeeting: protectedProcedure
+    .input(z.object({ meetingId: z.string() }))
+    .mutation(async ({ input, ctx }) => {
+      return await ctx.db.meeting.delete({
+        where: {
+          id: input.meetingId,
+        },
+      });
+    }
   ),
 });
