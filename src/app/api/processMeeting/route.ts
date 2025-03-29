@@ -20,7 +20,7 @@ export const POST = async (req: NextRequest) => {
 
     try{
         const body = await req.json();
-        const {meetingAudioURL, projectId, meetingId} = bodyParser.parse(body);
+        const {meetingAudioURL, meetingId} = bodyParser.parse(body);
         const summaries = await processMeeting(meetingAudioURL);
         await db.issue.createMany({
             data: summaries.map((summary) => ({
@@ -29,7 +29,6 @@ export const POST = async (req: NextRequest) => {
                 gist: summary.gist,
                 headline: summary.headline,
                 summary: summary.summary,
-                projectId,
                 meetingId,
             })),
         });

@@ -12,7 +12,7 @@ export async function uploadFile(file: File) {
 
     const { data, error } = await supabase.storage.from("meetings").upload(filePath, file, {
       cacheControl: "3600",
-      upsert: false, 
+      upsert: true,
       contentType: file.type,
     });
 
