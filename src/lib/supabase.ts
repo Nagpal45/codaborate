@@ -22,7 +22,7 @@ export async function uploadFile(file: File) {
     }
 
     const { data: publicUrlData } = supabase.storage.from("meetings").getPublicUrl(filePath);
-    resolve(publicUrlData.publicUrl);
+    resolve(publicUrlData.publicUrl as string);
   });
 }
 
