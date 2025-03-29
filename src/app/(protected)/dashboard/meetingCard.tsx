@@ -1,25 +1,23 @@
 'use client';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { uploadFile } from '@/lib/firebase';
 import { Presentation, Upload } from 'lucide-react';
 import { useState } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { CircularProgressbar } from 'react-circular-progressbar';
+import { uploadFile } from '@/lib/supabase';
 
 const MeetingCard = () => {
     const [isUploading, setIsUploading] = useState(false);
-    const [progress, setProgress] = useState(0);
     const {getRootProps, getInputProps} = useDropzone({
         accept:{
             'audio/*' : ['.mp3', '.wav', '.m4a'],
         },
         multiple: false,
-        maxSize: 50_000_000,
+        maxSize: 50 * 1024 * 1024, 
         onDrop: async acceptedFiles => {
             setIsUploading(true)
             const file = acceptedFiles[0];
-            const downloadURL = await uploadFile(file as File, setProgress)
+            const downloadURL = await uploadFile(file as File)
             window.alert(downloadURL)
             setIsUploading(false)
         }
@@ -48,7 +46,6 @@ const MeetingCard = () => {
             )}
             {isUploading && (
                 <div className="">
-                    <CircularProgressbar value={progress} text={`${progress}%`} className='size-20' />
                     <p className="text-sm text-gray-500 text-center">Uploading your meeting...</p>
                 </div>
             )}
