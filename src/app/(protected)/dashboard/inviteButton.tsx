@@ -1,4 +1,4 @@
-'use client'
+'use client';
 
 import { Button } from "@/components/ui/button";
 import {
@@ -15,6 +15,10 @@ import { toast } from "sonner";
 const InviteButton = () => {
   const { projectId } = useproject();
   const [open, setOpen] = useState(false);
+  const inviteLink =
+  typeof window !== "undefined"
+    ? `${window.location.origin}/join/${projectId}`
+    : "";
 
   return (
     <>
@@ -31,11 +35,11 @@ const InviteButton = () => {
           className="mt-4"
           onClick={() => {
             navigator.clipboard.writeText(
-              `${window.location.origin}/join/${projectId}`,
+              inviteLink,
             );
             toast.success("Link copied to clipboard!");
           }}
-          value={`${window.location.origin}/join/${projectId}`}
+          value={inviteLink}  
         />
       </DialogContent>
     </Dialog>
