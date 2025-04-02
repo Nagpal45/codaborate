@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import { pollCommits } from "@/lib/github";
-import { indexGithubRepo } from "@/lib/githubLoader";
+import { checkCredits, indexGithubRepo } from "@/lib/githubLoader";
 
 export const projectRouter = createTRPCRouter({
   createProject: protectedProcedure
@@ -183,5 +183,20 @@ export const projectRouter = createTRPCRouter({
           credits: true,
         },
       });
+    }),
+    checkCredits: protectedProcedure.input(z.object({githubUrl: z.string(), githubToken: z.string().optional()})).query(async ({ ctx, input }) => {
+      const fileCount =  await checkCredits(
+        input.githubUrl, input.githubToken);
+
+        const userCredits = await ctx.db.user.findUnique({
+          where: {
+            id: ctx.user.userId!,
+          },
+          select: {
+            credits: true,
+          },
+        })
+
+        return {fileCount, userCredits: userCredits?.credits || 0}
     }),
 });
