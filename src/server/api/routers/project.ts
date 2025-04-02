@@ -184,7 +184,7 @@ export const projectRouter = createTRPCRouter({
         },
       });
     }),
-    checkCredits: protectedProcedure.input(z.object({githubUrl: z.string(), githubToken: z.string().optional()})).query(async ({ ctx, input }) => {
+    checkCredits: protectedProcedure.input(z.object({githubUrl: z.string(), githubToken: z.string().optional()})).mutation(async ({ ctx, input }) => {
       const fileCount =  await checkCredits(
         input.githubUrl, input.githubToken);
 
