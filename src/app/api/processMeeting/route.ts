@@ -6,7 +6,6 @@ import { z } from "zod";
 
 const bodyParser = z.object({
     meetingAudioURL: z.string(),
-    projectId: z.string(),
     meetingId: z.string(),
 })
 
